@@ -440,3 +440,33 @@ class BLR:
         s2 = s2n + np.sum(Xs*linalg.solve(self.A, Xs.T).T, axis=1)
         
         return ys, s2
+
+    def transfer(self, hyp, X, y, Xs, var_groups_test=None):
+        """ Function to transfer the model to a new site"""
+        # Get predictions from old model on new data X
+        ys,s2 = self.predict(hyp, None, None, X)
+
+        # Subtract the predictions from true data to get the residuals
+        if self.warp is None:
+            residuals = ys-y
+
+        else:
+            # Calculate the residuals in warped space
+            y_ws = self.warp.f(y, hyp[1:self.warp.get_n_params()+1])
+            residuals = ys - y_ws 
+    
+        residuals_mu = np.mean(residuals)
+        residuals_sd = np.std(residuals)
+        
+        # Adjust the mean with the mean of the residuals
+        self.m = self.m-np.ones((len(self.m)))*residuals_mu 
+        ys,s2 = self.predict(hyp, None, None, Xs)
+        
+        # Set the deviation to the devations of the residuals
+        s2 = np.ones(len(s2))*residuals_sd**2
+        
+        return ys, s2
+        
+        
+        
+        
